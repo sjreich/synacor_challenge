@@ -1,4 +1,5 @@
 require 'pry'
+require_relative 'bin_reader'
 
 class Processor
   attr_accessor :memory, :registers, :stack, :head_position
@@ -9,7 +10,6 @@ class Processor
     @memory = instructions
 
     @registers = Array.new(8, 0)
-    @registers[1] = 100
 
     @stack = []
 
@@ -19,7 +19,6 @@ class Processor
   def run!
     loop do
       execute!
-      advance!
     end
   end
 
@@ -38,6 +37,39 @@ class Processor
     item_2 = get_value(head_position)
 
     memory[storage_location] = item_1 == item_2
+    advance!
+  end
+
+  # jump
+  def operation_6
+    advance!
+    self.head_position = get_value(self.head_position)
+  end
+
+  # jump_true
+  def operation_7
+    advance!
+    switch = get_value(head_position)
+    advance!
+    target = get_value(head_position)
+    if (switch % 32768) != 0
+      self.head_position = target
+    else
+      advance!
+    end
+  end
+
+  # jump_false
+  def operation_8
+    advance!
+    switch = get_value(head_position)
+    advance!
+    target = get_value(head_position)
+    if (switch % 32768) == 0
+      self.head_position = target
+    else
+      advance!
+    end
   end
 
   # add
@@ -52,16 +84,19 @@ class Processor
     sum = (item_1 + item_2) % 32768
 
     set_value(storage_location, sum)
+    advance!
   end
 
   # out
   def operation_19
     advance!
-    p get_value(head_position).chr
+    print get_value(head_position).chr
+    advance!
   end
 
   # noop
   def operation_21
+    advance!
   end
 
   private
@@ -75,24 +110,24 @@ class Processor
   end
 
   def get_value(address)
-    raise 'Really Invalid Address' unless (0..65535).cover? address
+    raise "Really Invalid Address: #{address.inspect}" unless (0..65535).cover? address
     value = memory[address]
-    raise 'Really Invalid Value' unless (0..65535).cover? value
+    raise "Really Invalid Value: #{value.inspect}" unless (0..65535).cover? value
     return value if (0..32767).cover? value
     return registers[value % 32768] if (32768..32775).cover? value
-    raise 'Invalid Value'
+    raise "Invalid Value: #{value.inspect}"
   end
 
   def get_address(address)
-    raise 'Really Invalid Address' unless (0..65535).cover? address
+    raise "Really Invalid Address: #{address.inspect}" unless (0..65535).cover? address
     memory[address]
   end
 
   def set_value(address, value)
-    raise 'Really Invalid Address' unless (0..65535).cover? address
-    raise 'Really Invalid Value' unless (0..65535).cover? value
-    raise 'Invalid Address' unless (0..32775).cover? address
-    raise 'Invalid Value' unless (0..32775).cover? value
+    raise "Really Invalid Address: #{address.inspect}" unless (0..65535).cover? address
+    raise "Really Invalid Value: #{value.inspect}" unless (0..65535).cover? value
+    raise "Invalid Address: #{address.inspect}" unless (0..32775).cover? address
+    raise "Invalid Value: #{value.inspect}" unless (0..32775).cover? value
     
     if (0..32767).cover? address
       memory[address] = value
@@ -102,4 +137,4 @@ class Processor
   end
 end
 
-Processor.new([9,32768,32769,4,19,32768,0]).run!
+Processor.new(BinReader.array_of_ints).run!
