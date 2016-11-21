@@ -24,19 +24,63 @@ class Processor
 
   # halt
   def operation_0
+    puts "Exiting at #{self.head_position}"
     exit
+  end
+
+  # set_register
+  def operation_1
+    advance!
+    register_number = memory[head_position] % 32768
+    advance!
+    value = get_value(head_position)
+    registers[register_number] = value
+    advance!
+  end
+
+  # push
+  def operation_2
+    advance!
+    value = get_value(head_position)
+    stack.push(value)
+    advance!
+  end
+
+  #pop
+  def operation_3
+    raise "Can't pop from an empty stack: #{head_position}" if stack.empty?
+    advance!
+    address = get_address(head_position)
+    set_value(address, stack.pop)
+    advance!
   end
 
   # eq
   def operation_4
     advance!
-    storage_location = get_value(head_position)
+    address = get_address(head_position)
     advance!
     item_1 = get_value(head_position)
     advance!
     item_2 = get_value(head_position)
 
-    memory[storage_location] = item_1 == item_2
+    value = item_1 == item_2 ? 1 : 0
+    set_value(address, value)
+
+    advance!
+  end
+
+  # greater_than
+  def operation_5
+    advance!
+    address = get_address(head_position)
+    advance!
+    item_1 = get_value(head_position)
+    advance!
+    item_2 = get_value(head_position)
+
+    value = item_1 > item_2 ? 1 : 0
+    set_value(address, value)
     advance!
   end
 
@@ -75,7 +119,7 @@ class Processor
   # add
   def operation_9
     advance!
-    storage_location = get_address(head_position)
+    address = get_address(head_position)
     advance!
     item_1 = get_value(head_position)
     advance!
@@ -83,8 +127,56 @@ class Processor
 
     sum = (item_1 + item_2) % 32768
 
-    set_value(storage_location, sum)
+    set_value(address, sum)
     advance!
+  end
+
+  # and
+  def operation_12
+    advance!
+    address = get_address(head_position)
+    advance!
+    item_1 = get_value(head_position)
+    advance!
+    item_2 = get_value(head_position)
+
+    value = item_1 & item_2
+    set_value(address, value)
+    advance!
+  end
+
+  # or
+  def operation_13
+    advance!
+    address = get_address(head_position)
+    advance!
+    item_1 = get_value(head_position)
+    advance!
+    item_2 = get_value(head_position)
+
+    value = item_1 | item_2
+    set_value(address, value)
+    advance!
+  end
+
+  # not
+  def operation_14
+    advance!
+    address = get_address(head_position)
+    advance!
+    item = get_value(head_position)
+    value = ~item % 32768
+    set_value(address, value)
+    advance!
+  end
+
+  # call
+  def operation_17
+    advance!
+    address = get_address(self.head_position)
+    advance!
+    stack.push(self.head_position)
+    self.head_position = address
   end
 
   # out
@@ -106,6 +198,7 @@ class Processor
   end
 
   def execute!
+    # puts head_position
     send "operation_#{get_value(head_position)}"
   end
 
@@ -134,6 +227,11 @@ class Processor
     elsif (32768..32775).cover? address
       registers[address % 32768] = value
     end
+  end
+
+  def raise(*args)
+    puts "Raising error at #{head_position}"
+    super(args)
   end
 end
 
