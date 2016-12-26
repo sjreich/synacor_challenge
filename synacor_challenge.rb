@@ -103,7 +103,7 @@ class Processor
     end
   end
 
-  # jump_false
+  # jump_if_false
   def operation_8
     advance!
     switch = get_value(head_position)
@@ -128,6 +128,37 @@ class Processor
     sum = (item_1 + item_2) % 32768
 
     set_value(address, sum)
+    advance!
+  end
+
+  # multiply
+  def operation_10
+    advance!
+    address = get_address(head_position)
+    advance!
+    item_1 = get_value(head_position)
+    advance!
+    item_2 = get_value(head_position)
+
+    product = (item_1 * item_2) % 32768
+
+    set_value(address, product)
+    advance!
+  end
+
+  # modulus
+    # store into <a> the remainder of <b> divided by <c>
+  def operation_11
+    advance!
+    address = get_address(head_position)
+    advance!
+    item_1 = get_value(head_position)
+    advance!
+    item_2 = get_value(head_position)
+
+    remainder = item_1 % item_2
+
+    set_value(address, remainder)
     advance!
   end
 
@@ -165,18 +196,35 @@ class Processor
     address = get_address(head_position)
     advance!
     item = get_value(head_position)
+
     value = ~item % 32768
     set_value(address, value)
+    advance!
+  end
+
+  # copy_from_address (rmem)
+  def operation_15
+    advance!
+    target_address = get_address(head_position)
+    advance!
+    source_address = get_address(head_position)
+    if source_address < 32768
+      value = get_value(source_address)
+    else
+      value = get_value(get_value(source_address))
+    end
+
+    set_value(target_address, value)
     advance!
   end
 
   # call
   def operation_17
     advance!
-    address = get_address(self.head_position)
+    value = get_value(self.head_position)
     advance!
     stack.push(self.head_position)
-    self.head_position = address
+    self.head_position = value
   end
 
   # out
@@ -203,34 +251,33 @@ class Processor
   end
 
   def get_value(address)
-    raise "Really Invalid Address: #{address.inspect}" unless (0..65535).cover? address
-    value = memory[address]
-    raise "Really Invalid Value: #{value.inspect}" unless (0..65535).cover? value
-    return value if (0..32767).cover? value
-    return registers[value % 32768] if (32768..32775).cover? value
-    raise "Invalid Value: #{value.inspect}"
+    raise "Get Value: Really Invalid Address: #{address.inspect}" unless (0..32775).cover? address
+
+    value = address < 32768 ? memory[address] : registers[address % 32768]
+    raise "Get Value: Really Invalid Value: #{value.inspect}" unless (0..32775).cover? value
+
+    value < 32768 ? value : registers[value % 32768]
   end
 
   def get_address(address)
-    raise "Really Invalid Address: #{address.inspect}" unless (0..65535).cover? address
+    raise "Really Invalid Address: #{address.inspect}" unless (0..32775).cover? address
     memory[address]
   end
 
   def set_value(address, value)
-    raise "Really Invalid Address: #{address.inspect}" unless (0..65535).cover? address
-    raise "Really Invalid Value: #{value.inspect}" unless (0..65535).cover? value
     raise "Invalid Address: #{address.inspect}" unless (0..32775).cover? address
     raise "Invalid Value: #{value.inspect}" unless (0..32775).cover? value
     
-    if (0..32767).cover? address
+    if address < 32768
       memory[address] = value
-    elsif (32768..32775).cover? address
+    else
       registers[address % 32768] = value
     end
   end
 
   def raise(*args)
     puts "Raising error at #{head_position}"
+    puts args
     super(args)
   end
 end
