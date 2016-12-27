@@ -232,6 +232,12 @@ class Processor
     self.head_position = address
   end
 
+  # return
+  def operation_18
+    exit if stack.empty?
+    self.head_position = stack.pop
+  end
+
   # print out
   def operation_19
     advance!
