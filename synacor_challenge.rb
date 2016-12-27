@@ -31,9 +31,9 @@ class Processor
   # set_register
   def operation_1
     advance!
-    register_number = memory[head_position] % 32768
+    register_number = get_address % 32768
     advance!
-    value = get_value(head_position)
+    value = get_value
     registers[register_number] = value
     advance!
   end
@@ -41,16 +41,16 @@ class Processor
   # push
   def operation_2
     advance!
-    value = get_value(head_position)
+    value = get_value
     stack.push(value)
     advance!
   end
 
   #pop
   def operation_3
-    raise "Can't pop from an empty stack: #{head_position}" if stack.empty?
+    raise 'Can\'t pop from an empty stack' if stack.empty?
     advance!
-    address = get_address(head_position)
+    address = get_address
     set_value(address, stack.pop)
     advance!
   end
@@ -58,26 +58,25 @@ class Processor
   # eq
   def operation_4
     advance!
-    address = get_address(head_position)
+    address = get_address
     advance!
-    item_1 = get_value(head_position)
+    item_1 = get_value
     advance!
-    item_2 = get_value(head_position)
+    item_2 = get_value
 
     value = item_1 == item_2 ? 1 : 0
     set_value(address, value)
-
     advance!
   end
 
   # greater_than
   def operation_5
     advance!
-    address = get_address(head_position)
+    address = get_address
     advance!
-    item_1 = get_value(head_position)
+    item_1 = get_value
     advance!
-    item_2 = get_value(head_position)
+    item_2 = get_value
 
     value = item_1 > item_2 ? 1 : 0
     set_value(address, value)
@@ -87,17 +86,17 @@ class Processor
   # jump
   def operation_6
     advance!
-    self.head_position = get_value(self.head_position)
+    self.head_position = get_value
   end
 
   # jump_true
   def operation_7
     advance!
-    switch = get_value(head_position)
+    switch = get_value
     advance!
-    target = get_value(head_position)
+    target_address = get_address
     if (switch % 32768) != 0
-      self.head_position = target
+      self.head_position = target_address
     else
       advance!
     end
@@ -106,11 +105,11 @@ class Processor
   # jump_if_false
   def operation_8
     advance!
-    switch = get_value(head_position)
+    switch = get_value
     advance!
-    target = get_value(head_position)
+    target_address = get_address
     if (switch % 32768) == 0
-      self.head_position = target
+      self.head_position = target_address
     else
       advance!
     end
@@ -119,11 +118,11 @@ class Processor
   # add
   def operation_9
     advance!
-    address = get_address(head_position)
+    address = get_address
     advance!
-    item_1 = get_value(head_position)
+    item_1 = get_value
     advance!
-    item_2 = get_value(head_position)
+    item_2 = get_value
 
     sum = (item_1 + item_2) % 32768
 
@@ -134,11 +133,11 @@ class Processor
   # multiply
   def operation_10
     advance!
-    address = get_address(head_position)
+    address = get_address
     advance!
-    item_1 = get_value(head_position)
+    item_1 = get_value
     advance!
-    item_2 = get_value(head_position)
+    item_2 = get_value
 
     product = (item_1 * item_2) % 32768
 
@@ -147,14 +146,13 @@ class Processor
   end
 
   # modulus
-    # store into <a> the remainder of <b> divided by <c>
   def operation_11
     advance!
-    address = get_address(head_position)
+    address = get_address
     advance!
-    item_1 = get_value(head_position)
+    item_1 = get_value
     advance!
-    item_2 = get_value(head_position)
+    item_2 = get_value
 
     remainder = item_1 % item_2
 
@@ -165,11 +163,11 @@ class Processor
   # and
   def operation_12
     advance!
-    address = get_address(head_position)
+    address = get_address
     advance!
-    item_1 = get_value(head_position)
+    item_1 = get_value
     advance!
-    item_2 = get_value(head_position)
+    item_2 = get_value
 
     value = item_1 & item_2
     set_value(address, value)
@@ -179,11 +177,11 @@ class Processor
   # or
   def operation_13
     advance!
-    address = get_address(head_position)
+    address = get_address
     advance!
-    item_1 = get_value(head_position)
+    item_1 = get_value
     advance!
-    item_2 = get_value(head_position)
+    item_2 = get_value
 
     value = item_1 | item_2
     set_value(address, value)
@@ -193,44 +191,54 @@ class Processor
   # not
   def operation_14
     advance!
-    address = get_address(head_position)
+    address = get_address
     advance!
-    item = get_value(head_position)
+    item = get_value
 
     value = ~item % 32768
     set_value(address, value)
     advance!
   end
 
-  # copy_from_address (rmem)
-  def operation_15
-    advance!
-    target_address = get_address(head_position)
-    advance!
-    source_address = get_address(head_position)
-    if source_address < 32768
-      value = get_value(source_address)
-    else
-      value = get_value(get_value(source_address))
-    end
+  # # copy_from_address (rmem)
+  # def operation_15
+  #   advance!
+  #   target_address = get_value
+  #   advance!
+  #   source_address = get_value
+  #   if source_address < 32768
+  #     value = get_value(source_address)
+  #   else
+  #     value = get_value(get_value(source_address))
+  #   end
 
-    set_value(target_address, value)
-    advance!
-  end
+  #   set_value(target_address, value)
+  #   advance!
+  # end
+
+  # # copy_from_value (wmem)
+  # def operation_16
+  #   advance!
+  #   target_address = get_value
+  #   value = get_value(head_position)
+
+  #   set_value(target_address, value)
+  #   advance!
+  # end
 
   # call
   def operation_17
     advance!
-    value = get_value(self.head_position)
+    address = get_value
     advance!
     stack.push(self.head_position)
-    self.head_position = value
+    self.head_position = address
   end
 
-  # out
+  # print out
   def operation_19
     advance!
-    print get_value(head_position).chr
+    print get_value.chr
     advance!
   end
 
@@ -246,28 +254,27 @@ class Processor
   end
 
   def execute!
-    # puts head_position
-    send "operation_#{get_value(head_position)}"
+    puts head_position
+    send "operation_#{get_value}"
   end
 
-  def get_value(address)
-    raise "Get Value: Really Invalid Address: #{address.inspect}" unless (0..32775).cover? address
-
+  def get_value(address = head_position)
+    raise "[GET] Invalid Address: #{address}" unless (0..32775).cover? address
     value = address < 32768 ? memory[address] : registers[address % 32768]
-    raise "Get Value: Really Invalid Value: #{value.inspect}" unless (0..32775).cover? value
-
-    value < 32768 ? value : registers[value % 32768]
+    until value < 32768
+      value = get_value(value)
+    end
+    value
   end
 
-  def get_address(address)
-    raise "Really Invalid Address: #{address.inspect}" unless (0..32775).cover? address
+  def get_address(address = head_position)
+    raise "[GET] Invalid Address: #{address}" unless (0..32775).cover? address
     memory[address]
   end
 
   def set_value(address, value)
-    raise "Invalid Address: #{address.inspect}" unless (0..32775).cover? address
-    raise "Invalid Value: #{value.inspect}" unless (0..32775).cover? value
-    
+    raise "[SET] Invalid Address: #{address}" unless (0..32775).cover? address
+    raise "[SET] Invalid Value: #{value}" unless (0..32775).cover? value
     if address < 32768
       memory[address] = value
     else
