@@ -200,31 +200,28 @@ class Processor
     advance!
   end
 
-  # # copy_from_address (rmem)
-  # def operation_15
-  #   advance!
-  #   target_address = get_value
-  #   advance!
-  #   source_address = get_value
-  #   if source_address < 32768
-  #     value = get_value(source_address)
-  #   else
-  #     value = get_value(get_value(source_address))
-  #   end
+  # copy_from_address (rmem)
+  def operation_15
+    advance!
+    target_address = get_address
+    advance!
+    source_address = get_value
 
-  #   set_value(target_address, value)
-  #   advance!
-  # end
+    value = get_value(source_address)
+    set_value(target_address, value)
+    advance!
+  end
 
-  # # copy_from_value (wmem)
-  # def operation_16
-  #   advance!
-  #   target_address = get_value
-  #   value = get_value(head_position)
+  # copy_from_value (wmem)
+  def operation_16
+    advance!
+    target_address = get_value
+    advance!
+    value = get_value
 
-  #   set_value(target_address, value)
-  #   advance!
-  # end
+    set_value(target_address, value)
+    advance!
+  end
 
   # call
   def operation_17
